@@ -1,0 +1,9 @@
+maubot: 0.1.0
+id: xyz.maubot.echortc
+version: 0.1.0
+license: MIT
+modules:
+- echortc
+main_class: EchoRTCBot
+dependencies:
+- aiortc
