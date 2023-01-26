@@ -110,8 +110,9 @@ class EchoRTCBot(Plugin):
 
     @event.on(EventType.CALL_INVITE)
     async def invite(self, evt: CallEvent[CallInviteEventContent]) -> None:
-        if evt.content.version != 1:
-            return
+        if evt.content.version != "1":
+            raise RuntimeError(f"evt.content.version={evt.content.version}")
+            #return
         offer = RTCSessionDescription(sdp=evt.content.offer.sdp, type=str(evt.content.offer.type))
         pc = RTCPeerConnection()
         unique_id = (evt.room_id, evt.sender, evt.content.call_id)
@@ -220,7 +221,7 @@ class EchoRTCBot(Plugin):
 
         response = CallAnswerEventContent(call_id=evt.content.call_id,
                                           party_id=self.party_id,
-                                          version=1,
+                                          version="1",
                                           answer=CallData(
                                               sdp=pc.localDescription.sdp,
                                               type=CallDataType(pc.localDescription.type),
