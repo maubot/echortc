@@ -57,8 +57,8 @@ class ProxyTrack(MediaStreamTrack):
 @dataclass
 class WrappedConn:
     pc: RTCPeerConnection
-    prepare_waiter: asyncio.Future
-    candidate_waiter: asyncio.Future
+    #prepare_waiter: asyncio.Future
+    #candidate_waiter: asyncio.Future
 
 
 class EchoRTCBot(Plugin):
@@ -83,12 +83,12 @@ class EchoRTCBot(Plugin):
             conn = self.conns[unique_id]
         except KeyError:
             return
-        await conn.prepare_waiter
+        #await conn.prepare_waiter
         for raw_candidate in evt.content.candidates:
-            if not raw_candidate.candidate:
-                # End of candidates
-                conn.candidate_waiter.set_result(None)
-                break
+            #if not raw_candidate.candidate:
+            #    # End of candidates
+            #    conn.candidate_waiter.set_result(None)
+            #    break
             try:
                 candidate = candidate_from_aioice(Candidate.from_sdp(raw_candidate.candidate))
             except ValueError as e:
@@ -110,8 +110,9 @@ class EchoRTCBot(Plugin):
 
     @event.on(EventType.CALL_INVITE)
     async def invite(self, evt: CallEvent[CallInviteEventContent]) -> None:
-        if evt.content.version != 1:
-            return
+        if evt.content.version != "1":
+            raise RuntimeError(f"evt.content.version={evt.content.version}")
+            #return
         offer = RTCSessionDescription(sdp=evt.content.offer.sdp, type=str(evt.content.offer.type))
         pc = RTCPeerConnection()
         unique_id = (evt.room_id, evt.sender, evt.content.call_id)
@@ -121,9 +122,9 @@ class EchoRTCBot(Plugin):
 
         log_info("Created for %s", evt.sender)
 
-        conn = self.conns[unique_id] = WrappedConn(pc=pc,
-                                                   candidate_waiter=self.loop.create_future(),
-                                                   prepare_waiter=self.loop.create_future())
+        conn = self.conns[unique_id] = WrappedConn(pc=pc)
+                                                   #candidate_waiter=self.loop.create_future(),
+                                                   #prepare_waiter=self.loop.create_future())
 
         # TODO load these from the plugin archive
         hello = MediaPlayer("hello.wav")
@@ -209,18 +210,18 @@ class EchoRTCBot(Plugin):
         await pc.setRemoteDescription(offer)
         await blackhole.start()
 
-        log_info("Ready to receive candidates")
-        conn.prepare_waiter.set_result(None)
+        #log_info("Ready to receive candidates")
+        #conn.prepare_waiter.set_result(None)
         await self.client.send_receipt(evt.room_id, evt.event_id)
-        await conn.candidate_waiter
-        log_info("Got candidates")
+        #await conn.candidate_waiter
+        #log_info("Got candidates")
 
         answer = await pc.createAnswer()
         await pc.setLocalDescription(answer)
 
         response = CallAnswerEventContent(call_id=evt.content.call_id,
                                           party_id=self.party_id,
-                                          version=1,
+                                          version="1",
                                           answer=CallData(
                                               sdp=pc.localDescription.sdp,
                                               type=CallDataType(pc.localDescription.type),
